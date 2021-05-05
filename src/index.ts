@@ -82,6 +82,28 @@ client.on("message", async (msg) => {
             msg.reply(`${channel.topic} 🔴`);
           }
         } else if (msg.content.includes("?sub")) {
+          if (msg.partial) await msg.fetch();
+          const channels = ((await client.channels.fetch(
+            //@ts-ignore
+            process.env.CHANNEL_CATEGORY_ID
+          )) as Discord.CategoryChannel).children.array();
+
+          let reply = "";
+
+          for (const channel of channels) {
+            const { id, topic } = channel as Discord.TextChannel;
+            if (topic) {
+              let perms = channel.permissionsFor(msg.author);
+              let canViewChannel = perms?.has("VIEW_CHANNEL");
+              reply =
+                reply.length < 1
+                  ? `${canViewChannel ? "🟢" : "🔴"} ${topic} ( ${id} )`
+                  : `${reply}\n${
+                      canViewChannel ? "🟢" : "🔴"
+                    } ${topic} ( ${id} )`;
+            }
+          }
+          return msg.reply("\n" + reply);
         }
       } catch (error) {
         msg.reply("I couldn't understand your command.");
