@@ -66,6 +66,7 @@ client.on("message", async (msg) => {
       try {
         if (msg.content.includes("!sub")) {
           if (msg.partial) await msg.fetch();
+
           const targetChannelId = msg.content.split(" ")[1];
           let channel = (await client.channels.fetch(
             targetChannelId
