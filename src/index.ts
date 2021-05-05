@@ -5,8 +5,8 @@ import Discord, {
   GuildAuditLogsEntry,
 } from "discord.js";
 import admin from "firebase-admin";
-import { announceToChannel } from "./helpers";
-import _ from "lodash";
+import { announceToChannel, updateHowToChannel } from "./helpers";
+import _, { includes } from "lodash";
 require("dotenv").config();
 const serviceAccount = require("../e-notifs-firebase-adminsdk-9h46d-f5e1c444d9.json");
 export type IEvent = {
@@ -29,30 +29,6 @@ const client = new Discord.Client({
 
 client.login(process.env.BOT_TOKEN);
 // Adding reaction-role function
-client.on("messageReactionAdd", async (reaction, user) => {
-  if (reaction.message.partial) await reaction.message.fetch();
-  if (reaction.partial) await reaction.fetch();
-  if (user.bot) return;
-  if (!reaction.message.guild) return;
-
-  if (reaction.message.channel.id == "802209416685944862") {
-    if (reaction.emoji.name === "🦊") {
-      // await reaction.message.guild.members.cache
-      //   .get(user.id)
-      //   .roles.add("802208163776167977");
-    }
-    if (reaction.emoji.name === "🐯") {
-      // await reaction.message.guild.members.cache
-      //   .get(user.id)
-      //   .roles.add("802208242696192040");
-    }
-    if (reaction.emoji.name === "🐍") {
-      // await reaction.message.guild.members.cache
-      //   .get(user.id)
-      //   .roles.add("802208314766524526");
-    }
-  } else return;
-});
 
 //@ts-ignore
 client.on("ready", async (msg) => {
@@ -75,16 +51,44 @@ client.on("ready", async (msg) => {
 
         // Remove channel
 
-        // And remove emoji
-
         // And unsubscribe all users from the course
       }
     }
+    await updateHowToChannel(client);
   });
 });
 
-client.on("message", async (msg) => {});
-// Listen to changes in Events collection
-/* If */
+client.on("message", async (msg) => {
+  if (!msg.author.bot)
+    if (msg.channel.id === process.env.HOWTO_CHANNEL_ID) {
+      try {
+        if (msg.content.includes("!sub")) {
+          if (msg.partial) await msg.fetch();
+          const targetChannelId = msg.content.split(" ")[1];
+          let channel = (await client.channels.fetch(
+            targetChannelId
+          )) as Discord.TextChannel;
 
-// Listen to Reactions from the message in how-to-get-notifs text channel
+          let perms = channel.permissionsFor(msg.author);
+
+          let canViewChannel = perms?.has("VIEW_CHANNEL");
+
+          await channel.updateOverwrite(msg.author.id, {
+            VIEW_CHANNEL: !canViewChannel,
+          });
+
+          if (!canViewChannel === true) msg.reply(`${channel.topic} 🟢`);
+          else {
+            msg.reply(`${channel.topic} 🔴`);
+          }
+        } else if (msg.content.includes("?sub")) {
+        }
+      } catch (error) {
+        msg.reply("I couldn't understand your command.");
+      }
+      // (msg.channel as Discord.TextChannel).updateOverwrite(msg.author.id, {
+      //   VIEW_CHANNEL: true,
+      // });
+      // msg.channel.send("hello");
+    }
+});
