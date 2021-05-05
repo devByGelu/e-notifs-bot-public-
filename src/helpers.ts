@@ -1,8 +1,12 @@
 import { IEvent } from "./index";
+
+import moment from "moment";
 import { CategoryChannel } from "discord.js";
 import _, { countBy } from "lodash";
 import Discord from "discord.js";
 import admin from "firebase-admin";
+import { EventEmitter } from "node:stream";
+import "discord-reply";
 
 export const getAllChannelsUnderCategoryChannel = async (
   client: Discord.Client
@@ -90,6 +94,21 @@ message.guild.createChannel(name, 'text')
   return newChannel;
 };
 
+const getEmbeddedMsg = (event: IEvent): Discord.MessageEmbed => {
+  const deadline = (event.deadline as admin.firestore.Timestamp).toDate();
+  return new Discord.MessageEmbed()
+    .setColor("#0099ff")
+    .setTitle(event.eventTitle)
+    .setURL(event.link)
+    .addFields(
+      { name: "Deadline", value: deadline.toLocaleString() },
+      { name: "Time Left", value: moment(deadline).fromNow(), inline: true }
+    )
+    .setFooter(`Last updated: ${new Date().toLocaleString()}`)
+    .attachFiles([event.pic])
+    .setImage(`attachment://${event.eventId}.png`);
+};
+
 export const announceToChannel = async (
   event: IEvent,
   client: Discord.Client,
@@ -111,17 +130,19 @@ export const announceToChannel = async (
 
   const channel = channelToAnnounce as Discord.TextChannel;
   // Then announce
+
+  // If server restarted, prevent from bot from reannouncements
+  const db = admin.firestore();
+  const data = (
+    await db.collection("messages").doc(event.eventId).get()
+  ).data();
+
   switch (change) {
     case "added":
-      // If server restarted, prevent from bot from reannouncements
-      const db = admin.firestore();
-      const data = (
-        await db.collection("messages").doc(event.eventId).get()
-      ).data();
       //
       if (!data) {
         // Announce
-        const msg = await channel.send(event.link);
+        const msg = await channel.send(getEmbeddedMsg(event));
 
         // After announcement, save messageId for future actions
         await db
@@ -132,17 +153,25 @@ export const announceToChannel = async (
         console.log(
           `${event.eventId} not announced because it was already created. Updating instead...`
         );
-        // If created is there announcement?
-        // const announcement = await channel.messages.fetch(data.messageId);
         await (await channel.messages.fetch(data.messageId)).edit(
-          event.eventId
+          getEmbeddedMsg(event)
         );
       }
       break;
 
     case "modified":
-      // const msg = await channel.send("hhhhh");
-      break;
+      if (data) {
+        console.log("Modifying...");
+        const msg = await (await channel.messages.fetch(data.messageId)).edit(
+          getEmbeddedMsg(event)
+        );
+        console.log(msg.id, " was modified");
+        // @ts-ignore
+        await msg.lineReply("**⚠️ The teacher just updated this event**");
+        break;
+      } else {
+        console.log("Error: no message found to modify.");
+      }
 
     default:
       break;

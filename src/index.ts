@@ -8,12 +8,14 @@ import admin from "firebase-admin";
 import { announceToChannel, updateHowToChannel } from "./helpers";
 import _, { includes } from "lodash";
 require("dotenv").config();
+require("discord-reply");
 const serviceAccount = require("../e-notifs-firebase-adminsdk-9h46d-f5e1c444d9.json");
 export type IEvent = {
   link: string;
   eventId: string;
+  eventTitle: string;
   pic: string;
-  deadline: Date;
+  deadline: Date | admin.firestore.Timestamp;
   courseTitle: string;
 };
 admin.initializeApp({
@@ -43,7 +45,7 @@ client.on("ready", async (msg) => {
       }
       if (change.type === "modified") {
         // If modified, announce that there is a change
-        console.log("Modified city: ", change.doc.data());
+        await announceToChannel(change.doc.data(), client, change.type);
       }
       if (change.type === "removed") {
         console.log("Removed event: ", change.doc.data());
@@ -108,9 +110,5 @@ client.on("message", async (msg) => {
       } catch (error) {
         msg.reply("I couldn't understand your command.");
       }
-      // (msg.channel as Discord.TextChannel).updateOverwrite(msg.author.id, {
-      //   VIEW_CHANNEL: true,
-      // });
-      // msg.channel.send("hello");
     }
 });
