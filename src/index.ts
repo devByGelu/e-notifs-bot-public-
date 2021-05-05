@@ -76,6 +76,7 @@ client.on("message", async (msg) => {
 
           let canViewChannel = perms?.has("VIEW_CHANNEL");
 
+          //
           await channel.updateOverwrite(msg.author.id, {
             VIEW_CHANNEL: !canViewChannel,
           });
