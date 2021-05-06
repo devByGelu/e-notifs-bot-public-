@@ -167,7 +167,7 @@ export const announceToChannel = async (
         );
         console.log(msg.id, " was modified");
         // @ts-ignore
-        await msg.lineReply("**⚠️ The teacher just updated this event**");
+        // await msg.lineReply("**⚠️ The teacher just updated this event**");
         break;
       } else {
         console.log("Error: no message found to modify.");
