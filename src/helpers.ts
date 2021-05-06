@@ -77,6 +77,10 @@ message.guild.createChannel(name, 'text')
     parent: process.env.CHANNEL_CATEGORY_ID,
     permissionOverwrites: [
       { id: process.env.EVERYONE_ROLE_ID, deny: ["VIEW_CHANNEL"] },
+      { id: process.env.EVERYONE_ROLE_ID, deny: ["MANAGE_MESSAGES"] },
+      { id: process.env.EVERYONE_ROLE_ID, deny: ["KICK_MEMBERS"] },
+      { id: process.env.EVERYONE_ROLE_ID, deny: ["MANAGE_CHANNELS"] },
+      { id: process.env.EVERYONE_ROLE_ID, deny: ["SEND_MESSAGES"] },
     ],
   });
 
